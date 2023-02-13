@@ -1,0 +1,45 @@
+version: "3.1"
+
+services:
+  messenger-pg:
+    container_name: messenger-pg
+    image: postgres:15
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    env_file:
+      - .env
+    volumes:
+      - ./storage/postgres/data/:/var/lib/postgresql/data
+  messenger-server:
+    container_name: messenger-server
+    restart: unless-stopped
+    depends_on:
+      - messenger-pg
+    networks:
+      - server-network
+    build:
+      context: ./app/api
+      dockerfile: DockerFile
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env
+  messenger-client:
+    container_name: messenger-client
+    restart: unless-stopped
+    depends_on:
+      - messenger-server
+    build:
+      context: ./app/client
+      dockerfile: DockerFile
+    ports:
+      - "4000:3000"
+    env_file:
+      - ./.env
+
+networks:
+  server-network:
+    driver: bridge
